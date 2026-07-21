@@ -2,32 +2,20 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
-
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
+My version is a content-based recommender: 18 songs with features like genre, mood, energy, and acousticness are each scored against one user's taste profile, then ranked. Every recommendation comes with the reasons for its score, and I tested it with four different profiles including one designed to break it.
 
 ---
 
 ## How The System Works
 
-Explain your design in plain language.
+Real platforms like Spotify mix collaborative filtering (what similar users played, skipped, and playlisted) with content-based filtering (matching song attributes to your known taste). My simulation is purely content-based: no other users, just song features versus one taste profile.
 
-Some prompts to answer:
-
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
-
-You can include a simple diagram or bullet list if helpful.
+- Each `Song` uses: genre, mood, energy (0-1) tempo_bpm, valence, danceability, and acousticness.
+- The `UserProfile` stores: favorite_genre, favorite_mood, target_energy, and likes_acoustic.
+- Scoring recipe (per song): +2.0 for a genre match, +1.0 for a mood match, up to +1.0 for energy closeness (1 minus the gap between song energy and target energy, so closeness is rewarded, not just "high"), and +0.5 if the song's acousticness matches the user's acoustic preference.
+- Ranking: every song in the CSV gets scored, then `sorted()` orders them by score (highest first) and the top k are returned with their reasons.
+Expected bias: genre is worth double anything else, so the system will likely recommend a weak genre match over a great song from a neighboring genre — a
+small filter bubble.
 
 ---
 
@@ -85,38 +73,26 @@ Paste a sample of your recommender's output here as a text block so a reader can
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
-
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+- Weight shift: I dropped genre from 2.0 to 0.5 and doubled the energy weight, then re-ran the "Conflicted" profile (lofi genre, energy 0.97). The top 5 completely flipped: originally three lofi songs led despite terrible energy fits; after the shift, high-energy metal/rock/edm (Steel Horizon, Gym Hero, Storm Runner) took over and no lofi song survived. Same data, same user- he weights alone decided the "taste."
+- Adversarial profile: giving a user conflicting preferences (chill genre + max energy) exposed that genre dominates ties; the system picks the genre side of the conflict every time under default weights.
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
-
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+- Tiny catalog (18 songs): rankings are decided by what happens to exist in the file. Lofi has 3 songs; several genres have exactly 1.
+- Exact-string genre matching: "indie pop" and "pop" score zero for each other even though they're neighbors.
+- Genre weight dominates: a mediocre genre match usually beats an excellent energy + mood fit, creating a filter bubble.
+- No lyrics, language, artist popularity, or listening history — real taste has dimensions this data can't see.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+The biggest thing I learned is that the "intelligence" in a recommender is mostly just weights. When I changed genre from 2.0 to 0.5 and doubled energy, the exact same user got a completely different top 5 — same data, same code structure, different opinion. That made me realize that when Spotify recommends something, a human somewhere decided what matters, and I'd never see that decision. The starter's main.py import was actually broken (it crashed with python -m src.main until we
+fixed it to import from src.recommender), and I only trusted the scoring logic after running the adversarial profile and the pytest tests myself.
 
-[**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
 
 
 
